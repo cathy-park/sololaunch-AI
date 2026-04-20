@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "현대카드 스타일의 세련된 견적 인터뷰 서비스",
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/favicon.png",
     apple: "/apple-touch-icon.png",
   },
   appleWebApp: {
