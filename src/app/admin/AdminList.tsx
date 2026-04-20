@@ -6,14 +6,21 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 
+const STATUS_CONFIG: Record<string, { label: string, color: string, bg: string, text: string, border: string }> = {
+  '접수됨': { label: '접수됨', color: 'blue', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  '검토중': { label: '검토중', color: 'amber', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  '상담완료': { label: '상담완료', color: 'purple', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+  '계약진행': { label: '계약진행', color: 'orange', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
+  '제작완료': { label: '제작완료', color: 'emerald', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+  '보류': { label: '보류', color: 'rose', bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200' },
+};
+
 const STATUS_LIST = [
   { label: '전체', value: 'all' },
-  { label: '접수됨', value: '접수됨' },
-  { label: '검토중', value: '검토중' },
-  { label: '상담완료', value: '상담완료' },
-  { label: '계약진행', value: '계약진행' },
-  { label: '완료', value: '완료' },
-  { label: '보류', value: '보류' },
+  ...Object.entries(STATUS_CONFIG).map(([value, config]) => ({
+    label: config.label,
+    value: value
+  }))
 ];
 
 export default function AdminList({ initialInterviews }: { initialInterviews: any[] }) {
@@ -35,13 +42,30 @@ export default function AdminList({ initialInterviews }: { initialInterviews: an
     }
   };
 
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    const { error } = await supabase
+      .from('interviews')
+      .update({ status: newStatus })
+      .eq('id', id);
+
+    if (error) {
+      alert('상태 업데이트 중 오류가 발생했습니다: ' + error.message);
+    } else {
+      setInterviews(prev => 
+        prev.map(item => item.id === id ? { ...item, status: newStatus } : item)
+      );
+    }
+  };
+
   const filteredInterviews = interviews.filter((item) => {
     const matchesSearch =
       item.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.client_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.client_phone.includes(searchTerm);
 
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter || (statusFilter === '접수됨' && item.status === '접수');
+    // '완료'는 '제작완료'와 동일하게 취급
+    const normalizedStatus = item.status === '완료' ? '제작완료' : (item.status === '접수' ? '접수됨' : item.status);
+    const matchesStatus = statusFilter === 'all' || normalizedStatus === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -62,20 +86,23 @@ export default function AdminList({ initialInterviews }: { initialInterviews: an
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {STATUS_LIST.map((s) => (
-            <button
-              key={s.value}
-              onClick={() => setStatusFilter(s.value)}
-              className={cn(
-                "px-5 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all border-2",
-                statusFilter === s.value
-                  ? "bg-black text-white border-black"
-                  : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
-              )}
-            >
-              {s.label}
-            </button>
-          ))}
+          {STATUS_LIST.map((s) => {
+            const config = STATUS_CONFIG[s.value];
+            return (
+              <button
+                key={s.value}
+                onClick={() => setStatusFilter(s.value)}
+                className={cn(
+                  "px-5 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all border-2",
+                  statusFilter === s.value
+                    ? (config ? `${config.bg} ${config.text} ${config.border}` : "bg-black text-white border-black")
+                    : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
+                )}
+              >
+                {s.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -95,15 +122,29 @@ export default function AdminList({ initialInterviews }: { initialInterviews: an
             className="bg-white border border-border rounded-xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
           >
             <div className="flex justify-between items-start mb-4">
-              <span className={cn(
-                "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                (item.status === '접수됨' || item.status === '접수') ? "bg-black text-white border-black" :
-                  item.status === '계약진행' ? "bg-blue-500 text-white border-blue-500" :
-                    item.status === '완료' ? "bg-green-500 text-white border-green-500" :
-                      "bg-white text-gray-400 border-gray-200"
-              )}>
-                {item.status || '접수됨'}
-              </span>
+              <div 
+                className="relative"
+                onClick={(e) => e.preventDefault()} // Link 클릭 전파 방지
+              >
+                <select
+                  value={item.status === '완료' ? '제작완료' : (item.status === '접수' ? '접수됨' : (item.status || '접수됨'))}
+                  onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                  onClick={(e) => e.stopPropagation()} // Link 클릭 방지
+                  className={cn(
+                    "appearance-none px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border cursor-pointer outline-none transition-all",
+                    STATUS_CONFIG[item.status === '완료' ? '제작완료' : (item.status === '접수' ? '접수됨' : (item.status || '접수됨'))]?.bg || "bg-gray-100",
+                    STATUS_CONFIG[item.status === '완료' ? '제작완료' : (item.status === '접수' ? '접수됨' : (item.status || '접수됨'))]?.text || "text-gray-600",
+                    STATUS_CONFIG[item.status === '완료' ? '제작완료' : (item.status === '접수' ? '접수됨' : (item.status || '접수됨'))]?.border || "border-gray-200",
+                    "hover:brightness-95 active:scale-95"
+                  )}
+                >
+                  {Object.keys(STATUS_CONFIG).map((status) => (
+                    <option key={status} value={status} className="text-sm font-medium">
+                      {STATUS_CONFIG[status].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] text-gray-400 font-medium flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
