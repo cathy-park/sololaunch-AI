@@ -162,7 +162,10 @@ export default function Home() {
         const updatedConfirmed = { ...state.confirmed };
 
         if (stepToEdit === 0) updatedConfirmed.type = option as string;
-        else if (stepToEdit === 1) updatedConfirmed.pages = (option as string[]).map(p => ({ name: p, count: DEFAULT_PAGE_SECTIONS[p] || 3 }));
+        else if (stepToEdit === 1) updatedConfirmed.pages = (option as string[]).map(p => ({ 
+          name: p, 
+          count: (updatedConfirmed.type === "랜딩페이지형" && p === "메인") ? 15 : (DEFAULT_PAGE_SECTIONS[p] || 3) 
+        }));
         else if (stepToEdit === 2) updatedConfirmed.pages = option as PageSection[];
         else if (stepToEdit === 3) updatedConfirmed.boards = option as string[];
         else if (stepToEdit === 4) updatedConfirmed.features = option as string[];
@@ -282,7 +285,10 @@ export default function Home() {
           if (!selectedPages.includes("메인")) selectedPages = ["메인", ...selectedPages];
           if (selectedPages.includes("잘 모르겠어요")) selectedPages = DEFAULT_DONT_KNOW_PAGES;
 
-          const initialSections = selectedPages.map((p) => ({ name: p, count: DEFAULT_PAGE_SECTIONS[p] || 3 }));
+          const initialSections = selectedPages.map((p) => ({ 
+            name: p, 
+            count: (state.confirmed.type === "랜딩페이지형" && p === "메인") ? 15 : (DEFAULT_PAGE_SECTIONS[p] || 3) 
+          }));
           const nextStep = 2;
           setTempPageSections(initialSections);
           setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, pages: initialSections } }));

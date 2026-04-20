@@ -1,10 +1,11 @@
-export type WebsiteType = 'COMPANY' | 'SERVICE' | 'PORTFOLIO' | 'MALL' | 'UNKNOWN';
+export type WebsiteType = 'COMPANY' | 'SERVICE' | 'PORTFOLIO' | 'MALL' | 'LANDING' | 'UNKNOWN';
 
 export const TYPE_LABELS: Record<string, string> = {
   '회사 소개형': 'COMPANY',
   '서비스 소개형': 'SERVICE',
   '포트폴리오형': 'PORTFOLIO',
   '쇼핑몰형': 'MALL',
+  '랜딩페이지형': 'LANDING',
   '잘 모르겠어요': 'UNKNOWN',
 };
 
@@ -14,6 +15,7 @@ export const TYPE_PAGES_MAPPING: Record<WebsiteType, string[]> = {
   SERVICE: ['메인', '서비스소개', '가격 안내', 'FAQ', '문의하기'],
   PORTFOLIO: ['메인', '포트폴리오', '작업 사례', '소개', '문의하기'],
   MALL: ['메인', '상품 목록', '상품 상세', '장바구니', '결제', '배송 안내', '후기'],
+  LANDING: ['메인'],
   UNKNOWN: ['메인', '회사소개', '서비스소개', '포트폴리오', '문의하기', '공지사항', '블로그'],
 };
 
