@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     
     try {
       const emailResponse = await resend.emails.send({
-        from: '똑디 인터뷰 <onboarding@resend.dev>', // Resend 무료 티어는 onboarding@resend.dev만 가능
+        from: '똑디 인터뷰 <info@ddokd.com>', // 도메인 인증이 완료되었으므로 전용 주소 사용
         to: adminEmail,
         subject: `[똑디 신규접수] ${client_name}님의 견적 브리프가 도착했습니다.`,
         html: `
