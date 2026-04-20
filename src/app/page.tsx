@@ -2,16 +2,16 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Info, Plus, Minus, X, CheckCircle2, Upload, Layout, Layers, Globe, ChevronRight, RotateCcw } from "lucide-react";
+import { Check, Info, Plus, Minus, X, CheckCircle2, Upload, Layout, Layers, Globe, ChevronRight, RotateCcw, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { calculateEstimate, DEFAULT_PAGE_SECTIONS, TYPE_LABELS, TYPE_PAGES_MAPPING, PageSection, PRICING, DEFAULT_DONT_KNOW_PAGES } from "@/lib/estimateFlow";
+import { calculateEstimate, DEFAULT_PAGE_SECTIONS, TYPE_LABELS, TYPE_PAGES_MAPPING, PageSection, PRICING, DEFAULT_DONT_KNOW_PAGES, WebsiteType } from "@/lib/estimateFlow";
 
 type Message = {
   id: string;
   role: "bot" | "user";
   content: string;
   step: number;
-  type?: "text" | "selection" | "multi-selection" | "section-adjustment" | "quote" | "form" | "contact";
+  type?: "text" | "selection" | "multi-selection" | "section-adjustment" | "quote" | "form" | "contact" | "color-multi";
   options?: string[];
   data?: any;
 };
@@ -139,7 +139,7 @@ export default function Home() {
     setShowEtcInput(false);
   };
 
-  const handleSelection = async (option: string | string[] | PageSection[]) => {
+  const handleSelection = async (option: string | string[] | PageSection[] | { email: string; phone: string }) => {
     if (isTyping) return;
     // 부분 수정 모드인 경우
     if (editingStep !== null) {
@@ -255,7 +255,7 @@ export default function Home() {
       if (currentStep === 0) {
         const selectedTypeLabel = option as string;
         const typeKey = TYPE_LABELS[selectedTypeLabel] || "UNKNOWN";
-        const pageOptions = TYPE_PAGES_MAPPING[typeKey as any] || TYPE_PAGES_MAPPING["UNKNOWN"];
+        const pageOptions = TYPE_PAGES_MAPPING[typeKey as WebsiteType] || TYPE_PAGES_MAPPING["UNKNOWN"];
         const nextStep = 1;
         setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, type: selectedTypeLabel } }));
         setTempSelection(["메인"]);
@@ -263,7 +263,7 @@ export default function Home() {
           role: "bot",
           content: "'메인' 페이지는 기본 포함입니다. 메인 페이지만 제작하는 랜딩페이지도 가능합니다.\n추가 제작을 원하는 페이지가 있다면 선택해주세요.",
           type: "multi-selection",
-          options: pageOptions.filter((p) => p !== "메인"),
+          options: pageOptions.filter((p: string) => p !== "메인"),
         }, nextStep);
       } else if (currentStep === 1) {
         let selectedPages = option as string[];
@@ -1092,7 +1092,7 @@ function ChoiceButton({
 }: {
   label: string;
   selected?: boolean;
-  variant?: "primary" | "secondary" | "outline";
+  variant?: "primary" | "secondary" | "outline" | "etc";
   onClick: () => void;
   locked?: boolean;
   disabled?: boolean;
