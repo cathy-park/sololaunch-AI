@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Mail, Calendar, Calculator, ChevronRight, Search, Filter, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 
@@ -24,6 +24,7 @@ const STATUS_LIST = [
 ];
 
 export default function AdminList({ initialInterviews }: { initialInterviews: any[] }) {
+  const router = useRouter();
   const [interviews, setInterviews] = useState(initialInterviews);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -116,26 +117,30 @@ export default function AdminList({ initialInterviews }: { initialInterviews: an
       {/* Main Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredInterviews.map((item) => (
-          <Link
+          <div
             key={item.id}
-            href={`/admin/${item.id}`}
-            className="bg-white border border-border rounded-xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+            onClick={() => router.push(`/admin/${item.id}`)}
+            className="bg-white border border-border rounded-xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer relative"
           >
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-4 relative z-10">
               <div 
                 className="relative"
-                onClick={(e) => e.preventDefault()} // Link 클릭 전파 방지
+                onClick={(e) => e.stopPropagation()} // 상세 페이지 이동 방지
               >
                 <select
                   value={item.status === '완료' ? '제작완료' : (item.status === '접수' ? '접수됨' : (item.status || '접수됨'))}
-                  onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                  onClick={(e) => e.stopPropagation()} // Link 클릭 방지
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    handleStatusChange(item.id, e.target.value);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
                   className={cn(
                     "appearance-none px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border cursor-pointer outline-none transition-all",
                     STATUS_CONFIG[item.status === '완료' ? '제작완료' : (item.status === '접수' ? '접수됨' : (item.status || '접수됨'))]?.bg || "bg-gray-100",
                     STATUS_CONFIG[item.status === '완료' ? '제작완료' : (item.status === '접수' ? '접수됨' : (item.status || '접수됨'))]?.text || "text-gray-600",
                     STATUS_CONFIG[item.status === '완료' ? '제작완료' : (item.status === '접수' ? '접수됨' : (item.status || '접수됨'))]?.border || "border-gray-200",
-                    "hover:brightness-95 active:scale-95"
+                    "hover:border-black active:scale-95"
                   )}
                 >
                   {Object.keys(STATUS_CONFIG).map((status) => (
@@ -180,7 +185,7 @@ export default function AdminList({ initialInterviews }: { initialInterviews: an
               <span className="text-[11px] font-black text-gray-300 uppercase tracking-widest">{item.industry || '기타'}</span>
               <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-black group-hover:translate-x-1 transition-all" />
             </div>
-          </Link>
+          </div>
         ))}
       </div>
 
