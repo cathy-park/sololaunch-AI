@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Info, Plus, Minus, X, CheckCircle2, Upload, Layout, Layers, Globe, ChevronRight, RotateCcw, Send } from "lucide-react";
+import { Check, Info, Plus, Minus, X, CheckCircle2, Upload, Layout, Layers, Globe, ChevronRight, RotateCcw, Send, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import html2canvas from "html2canvas";
 import { calculateEstimate, DEFAULT_PAGE_SECTIONS, TYPE_LABELS, TYPE_PAGES_MAPPING, PageSection, PRICING, DEFAULT_DONT_KNOW_PAGES, WebsiteType } from "@/lib/estimateFlow";
 
 type Message = {
@@ -113,6 +114,8 @@ export default function Home() {
     setIsTyping(true);
     await new Promise((r) => setTimeout(r, 800));
     addMessage({ role: "bot", content: "안녕하세요! 똑디 인터뷰봇입니다. 🤖" }, 0);
+    await new Promise((r) => setTimeout(r, 600));
+    addMessage({ role: "bot", content: "정부지원 상품의 경우에는 템플릿은 제작비 0원, 맞춤제작은 최종 제작견적에서 -100만원입니다." }, 0);
     await new Promise((r) => setTimeout(r, 600));
     addMessage({
       role: "bot",
@@ -1232,86 +1235,126 @@ function SectionHelpModal({ onClose }: { onClose: () => void }) {
 }
 
 function ResultCard({ data }: { data: any; state: InterviewState }) {
-  return (
-    <div
-      className="w-full bg-[#1c1c1e] text-white rounded-[24px] overflow-hidden shadow-2xl"
-      style={{
-        border: "1px solid rgba(255,255,255,0.1)",
-        backdropFilter: "saturate(180%) blur(20px)",
-      }}
-    >
-      {/* Header */}
-      <div className="p-8 pb-6 border-b border-white border-opacity-10 text-center">
-        <p style={{ fontSize: "12px", fontWeight: 600, color: "rgba(255,255,255,0.48)", letterSpacing: "0.4em", textTransform: "uppercase" }}>
-          Estimated Quote
-        </p>
-        <h2 className="mt-4 text-[15px] font-medium text-white opacity-60">예상 제작 비용 범위</h2>
-        <div className="mt-2 flex items-baseline justify-center gap-2">
-          <span className="text-[28px] md:text-[32px] font-bold tracking-tight">
-            ₩ {data.minPrice.toLocaleString()} ~ {data.maxPrice.toLocaleString()}
-          </span>
-        </div>
-        <p className="mt-3 text-[12px]" style={{ color: "rgba(255,255,255,0.4)" }}>
-          위 금액은 제작비 기준 예상 범위입니다. (VAT 별도)
-        </p>
-      </div>
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
 
-      {/* Details */}
-      <div className="p-8 space-y-8">
-        <div>
-          <p style={{ fontSize: "10px", fontWeight: 600, color: "rgba(255,255,255,0.48)", letterSpacing: "0.3em", textTransform: "uppercase", marginBottom: "20px" }}>
-            Quote Breakdown
+  const handleDownloadImage = async () => {
+    if (!cardRef.current) return;
+    setIsCapturing(true);
+    try {
+      // 캡처를 위해 잠시 스타일 조정이 필요할 수 있음 (배경색 등)
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: "#1c1c1e",
+        scale: 2, // 고해상도
+        useCORS: true,
+        logging: false,
+      });
+      
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = image;
+      link.download = `똑디_예상견적서_${new Date().getTime()}.png`;
+      link.click();
+    } catch (err) {
+      console.error("Capture error:", err);
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-4 w-full">
+      <div
+        ref={cardRef}
+        className="w-full bg-[#1c1c1e] text-white rounded-[24px] overflow-hidden shadow-2xl"
+        style={{
+          border: "1px solid rgba(255,255,255,0.1)",
+          backdropFilter: "saturate(180%) blur(20px)",
+        }}
+      >
+        {/* Header */}
+        <div className="p-8 pb-6 border-b border-white border-opacity-10 text-center">
+          <p style={{ fontSize: "12px", fontWeight: 600, color: "rgba(255,255,255,0.48)", letterSpacing: "0.4em", textTransform: "uppercase" }}>
+            Estimated Quote
           </p>
-          <ul className="space-y-4 text-[14px]">
-            <li className="flex justify-between pb-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-              <span style={{ color: "rgba(255,255,255,0.48)" }}>섹션 제작비 ({data.totalSections}개)</span>
-              <span className="font-semibold text-white">₩ {data.pureSectionPrice?.toLocaleString()}</span>
-            </li>
-            {(data.featureTotalPrice || 0) > 0 && (
+          <h2 className="mt-4 text-[15px] font-medium text-white opacity-60">예상 제작 비용 범위</h2>
+          <div className="mt-2 flex items-baseline justify-center gap-2">
+            <span className="text-[28px] md:text-[32px] font-bold tracking-tight">
+              ₩ {data.minPrice.toLocaleString()} ~ {data.maxPrice.toLocaleString()}
+            </span>
+          </div>
+          <p className="mt-3 text-[12px]" style={{ color: "rgba(255,255,255,0.4)" }}>
+            위 금액은 제작비 기준 예상 범위입니다. (VAT 별도)
+          </p>
+        </div>
+
+        {/* Details */}
+        <div className="p-8 space-y-8">
+          <div>
+            <p style={{ fontSize: "10px", fontWeight: 600, color: "rgba(255,255,255,0.48)", letterSpacing: "0.3em", textTransform: "uppercase", marginBottom: "20px" }}>
+              Quote Breakdown
+            </p>
+            <ul className="space-y-4 text-[14px]">
               <li className="flex justify-between pb-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                <span style={{ color: "rgba(255,255,255,0.48)" }}>추가 기능 비용</span>
-                <span className="font-semibold text-white">₩ {data.featureTotalPrice?.toLocaleString()}</span>
+                <span style={{ color: "rgba(255,255,255,0.48)" }}>섹션 제작비 ({data.totalSections}개)</span>
+                <span className="font-semibold text-white">₩ {data.pureSectionPrice?.toLocaleString()}</span>
               </li>
-            )}
-            {(data.boardTotalPrice || 0) > 0 && (
+              {(data.featureTotalPrice || 0) > 0 && (
+                <li className="flex justify-between pb-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span style={{ color: "rgba(255,255,255,0.48)" }}>추가 기능 비용</span>
+                  <span className="font-semibold text-white">₩ {data.featureTotalPrice?.toLocaleString()}</span>
+                </li>
+              )}
+              {(data.boardTotalPrice || 0) > 0 && (
+                <li className="flex justify-between pb-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span style={{ color: "rgba(255,255,255,0.48)" }}>게시판 구축비 ({data.totalBoards}개)</span>
+                  <span className="font-semibold text-white">₩ {data.boardTotalPrice?.toLocaleString()}</span>
+                </li>
+              )}
               <li className="flex justify-between pb-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                <span style={{ color: "rgba(255,255,255,0.48)" }}>게시판 구축비 ({data.totalBoards}개)</span>
-                <span className="font-semibold text-white">₩ {data.boardTotalPrice?.toLocaleString()}</span>
+                <span style={{ color: "rgba(255,255,255,0.48)" }}>난이도 및 자료 준비 가중치</span>
+                <span className="font-semibold text-[#00ffcc]">x {data.difficultyWeight.toFixed(1)}</span>
               </li>
-            )}
-            <li className="flex justify-between pb-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-              <span style={{ color: "rgba(255,255,255,0.48)" }}>난이도 및 자료 준비 가중치</span>
-              <span className="font-semibold text-[#00ffcc]">x {data.difficultyWeight.toFixed(1)}</span>
-            </li>
-            <li className="flex justify-between items-start pt-4 border-t border-white border-opacity-10">
-              <span style={{ color: "rgba(255,255,255,0.48)" }}>기본 호스팅 비용</span>
-              <div className="text-right">
-                <span className="block text-[#1cdcf5]">월 ₩ {PRICING.BASE_HOSTING_MONTHLY.toLocaleString()}</span>
-                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)" }}>연 단위 결제 기준</span>
-              </div>
-            </li>
-            {data.isMultilingual && (
-              <li className="flex justify-between items-start">
-                <span style={{ color: "rgba(255,255,255,0.48)" }}>다국어 디자인 가산 (섹션당)</span>
+              <li className="flex justify-between items-start pt-4 border-t border-white border-opacity-10">
+                <span style={{ color: "rgba(255,255,255,0.48)" }}>기본 호스팅 비용</span>
                 <div className="text-right">
-                  <span className="block text-[#1cdcf5]">₩ {data.designAddonPrice?.toLocaleString()} 추가</span>
+                  <span className="block text-[#1cdcf5]">월 ₩ {PRICING.BASE_HOSTING_MONTHLY.toLocaleString()}</span>
+                  <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)" }}>연 단위 결제 기준</span>
                 </div>
               </li>
-            )}
-          </ul>
-        </div>
+              {data.isMultilingual && (
+                <li className="flex justify-between items-start">
+                  <span style={{ color: "rgba(255,255,255,0.48)" }}>다국어 디자인 가산 (섹션당)</span>
+                  <div className="text-right">
+                    <span className="block text-[#1cdcf5]">₩ {data.designAddonPrice?.toLocaleString()} 추가</span>
+                  </div>
+                </li>
+              )}
+            </ul>
+          </div>
 
-        <div className="p-5 rounded-[8px] space-y-2" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <p style={{ fontSize: "10px", fontWeight: 600, color: "rgba(255,255,255,0.48)", letterSpacing: "0.3em", textTransform: "uppercase" }}>
-            Notices
-          </p>
-          <div className="space-y-1.5" style={{ fontSize: "11px", color: "rgba(255,255,255,0.48)", lineHeight: "1.47", letterSpacing: "-0.08px" }}>
-            <p>• 모든 비용은 부가세(VAT) 별도입니다.</p>
-            <p>• 제작 범위 및 기능 난이도에 따라 최종 견적은 변동될 수 있습니다.</p>
-            <p>• 2차 상세 인터뷰 완료 시 더 정확한 실행 견적이 산출됩니다.</p>
+          <div className="p-5 rounded-[8px] space-y-2" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <p style={{ fontSize: "10px", fontWeight: 600, color: "rgba(255,255,255,0.48)", letterSpacing: "0.3em", textTransform: "uppercase" }}>
+              Notices
+            </p>
+            <div className="space-y-1.5" style={{ fontSize: "11px", color: "rgba(255,255,255,0.48)", lineHeight: "1.47", letterSpacing: "-0.08px" }}>
+              <p>• 모든 비용은 부가세(VAT) 별도입니다.</p>
+              <p>• 제작 범위 및 기능 난이도에 따라 최종 견적은 변동될 수 있습니다.</p>
+              <p>• 2차 상세 인터뷰 완료 시 더 정확한 실행 견적이 산출됩니다.</p>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Download Button */}
+      <button
+        onClick={handleDownloadImage}
+        disabled={isCapturing}
+        className="flex items-center justify-center gap-2 w-full py-4 rounded-[16px] bg-white text-black font-bold text-[14px] hover:bg-opacity-90 transition-all disabled:opacity-50"
+      >
+        <Download className="w-4 h-4" />
+        {isCapturing ? "이미지 생성 중..." : "견적서 이미지로 저장하기"}
+      </button>
     </div>
   );
 }
