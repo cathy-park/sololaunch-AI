@@ -317,7 +317,7 @@ export default function Home() {
             role: "bot",
             content: "현재 어느 단계까지 준비되셨나요?",
             type: "selection",
-            options: ["텍스트/이미지 준비됨", "내용 기획/정리 필요", "디자인 소스 포함 전체 기획 필요"],
+            options: ["기획 자료 준비됨", "내용 기획/정리 필요", "전체 기획 필요"],
           }, nextStep);
         } else if (currentStep === 5) {
           const nextStep = 6;
@@ -765,27 +765,31 @@ export default function Home() {
                       ))}
 
                       <div className="flex flex-wrap gap-2 w-full mt-1">
-                        <ChoiceButton
-                          label="잘 모르겠어요"
-                          variant="secondary"
-                          selected={tempSelection.includes("잘 모르겠어요")}
-                          onClick={() =>
-                            setTempSelection((prev) =>
-                              prev.includes("잘 모르겠어요") ? prev.filter((i) => i !== "잘 모르겠어요") : ["메인", "잘 모르겠어요"]
-                            )
-                          }
-                        />
-                        <ChoiceButton
-                          label="해당 없음"
-                          variant="secondary"
-                          selected={tempSelection.includes("해당 없음")}
-                          onClick={() =>
-                            setTempSelection((prev) => {
-                              const filtered = prev.filter((i) => i !== "잘 모르겠어요");
-                              return filtered.includes("해당 없음") ? filtered.filter((i) => i !== "해당 없음") : [...filtered, "해당 없음"];
-                            })
-                          }
-                        />
+                        {![1, 3, 4].includes(state.step) && (
+                          <ChoiceButton
+                            label="잘 모르겠어요"
+                            variant="secondary"
+                            selected={tempSelection.includes("잘 모르겠어요")}
+                            onClick={() =>
+                              setTempSelection((prev) =>
+                                prev.includes("잘 모르겠어요") ? prev.filter((i) => i !== "잘 모르겠어요") : ["메인", "잘 모르겠어요"]
+                              )
+                            }
+                          />
+                        )}
+                        {state.step !== 1 && (
+                          <ChoiceButton
+                            label="해당 없음"
+                            variant="secondary"
+                            selected={tempSelection.includes("해당 없음")}
+                            onClick={() =>
+                              setTempSelection((prev) => {
+                                const filtered = prev.filter((i) => i !== "잘 모르겠어요");
+                                return filtered.includes("해당 없음") ? filtered.filter((i) => i !== "해당 없음") : [...filtered, "해당 없음"];
+                              })
+                            }
+                          />
+                        )}
                         {isActiveStep && (
                           <ChoiceButton label="기타 +" variant="etc" onClick={() => setShowEtcInput(!showEtcInput)} />
                         )}
@@ -1249,7 +1253,7 @@ function ResultCard({ data }: { data: any; state: InterviewState }) {
         useCORS: true,
         logging: false,
       });
-      
+
       const image = canvas.toDataURL("image/png");
       const link = document.createElement("a");
       link.href = image;
