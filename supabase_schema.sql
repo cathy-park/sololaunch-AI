@@ -65,6 +65,12 @@ CREATE POLICY "Anyone can update"
     FOR UPDATE
     USING (true);
 
+-- 7. 정책: 누구나 DELETE 가능 (어드민 내역 삭제용)
+CREATE POLICY "Anyone can delete"
+    ON public.interviews
+    FOR DELETE
+    USING (true);
+
 -- =====================================================
 -- 완료! SQL Editor에서 Run을 누르세요.
 -- =====================================================

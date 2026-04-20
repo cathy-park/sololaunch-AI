@@ -1339,6 +1339,7 @@ function ResultCard({ data }: { data: any; state: InterviewState }) {
             </p>
             <div className="space-y-1.5" style={{ fontSize: "11px", color: "rgba(255,255,255,0.48)", lineHeight: "1.47", letterSpacing: "-0.08px" }}>
               <p>• 모든 비용은 부가세(VAT) 별도입니다.</p>
+              <p>• 호스팅 비용은 제작비와 별도이며, 1년 단위 결제가 필수입니다.</p>
               <p>• 제작 범위 및 기능 난이도에 따라 최종 견적은 변동될 수 있습니다.</p>
               <p>• 2차 상세 인터뷰 완료 시 더 정확한 실행 견적이 산출됩니다.</p>
             </div>
