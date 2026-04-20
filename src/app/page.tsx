@@ -124,17 +124,26 @@ export default function Home() {
   };
 
   const addCustomOption = () => {
-    if (!etcInputValue.trim()) return;
+    const trimmedVal = etcInputValue.trim();
+    if (!trimmedVal) return;
+
     const currentStep = state.step;
-    const newVal = etcInputValue.trim();
+
+    // 중복 추가 방지
+    if (tempSelection.includes(trimmedVal)) {
+      setEtcInputValue("");
+      setShowEtcInput(false);
+      return;
+    }
+
     setState((prev) => ({
       ...prev,
       customOptions: {
         ...prev.customOptions,
-        [currentStep]: [...(prev.customOptions[currentStep] || []), newVal],
+        [currentStep]: [...(prev.customOptions[currentStep] || []), trimmedVal],
       },
     }));
-    setTempSelection((prev) => [...prev, newVal]);
+    setTempSelection((prev) => [...prev, trimmedVal]);
     setEtcInputValue("");
     setShowEtcInput(false);
   };
@@ -144,7 +153,7 @@ export default function Home() {
     // 부분 수정 모드인 경우
     if (editingStep !== null) {
       const stepToEdit = editingStep;
-      
+
       // 1. 상태 업데이트 (1차 견적용)
       if (stepToEdit < 100) {
         const updatedConfirmed = { ...state.confirmed };
@@ -182,24 +191,24 @@ export default function Home() {
           }
           return m;
         }));
-      } 
+      }
       // 2. 상태 업데이트 (2차 상세 인터뷰용)
       else {
         const dStep = stepToEdit - 100;
-        
+
         if (dStep === 2) { // 연락처 통합 수정
           const { email, phone } = option as { email: string; phone: string };
           setState(prev => ({ ...prev, details: { ...prev.details, email, phone } }));
         } else {
           const fieldMap: Record<number, string> = {
-            1: 'name', 3: 'industry', 4: 'targetAudience', 5: 'purpose', 
+            1: 'name', 3: 'industry', 4: 'targetAudience', 5: 'purpose',
             6: 'refSites', 7: 'designMood', 8: 'logoStatus', 9: 'targetSchedule', 11: 'additionalRequest'
           };
           const field = fieldMap[dStep];
           if (field) {
-            setState(prev => ({ 
-              ...prev, 
-              details: { ...prev.details, [field]: dStep === 6 ? [option as string] : option as string } 
+            setState(prev => ({
+              ...prev,
+              details: { ...prev.details, [field]: dStep === 6 ? [option as string] : option as string }
             }));
           }
         }
@@ -245,224 +254,224 @@ export default function Home() {
       state.isDetailedFlow ? state.detailedStep + 100 : state.step
     );
     setIsTyping(true);
-    
+
     try {
       await new Promise((r) => setTimeout(r, 600));
 
-    if (!state.isDetailedFlow) {
-      const currentStep = state.step;
+      if (!state.isDetailedFlow) {
+        const currentStep = state.step;
 
-      if (currentStep === 0) {
-        const selectedTypeLabel = option as string;
-        const typeKey = TYPE_LABELS[selectedTypeLabel] || "UNKNOWN";
-        const pageOptions = TYPE_PAGES_MAPPING[typeKey as WebsiteType] || TYPE_PAGES_MAPPING["UNKNOWN"];
-        const nextStep = 1;
-        setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, type: selectedTypeLabel } }));
-        setTempSelection(["메인"]);
-        addMessage({
-          role: "bot",
-          content: "'메인' 페이지는 기본 포함입니다. 메인 페이지만 제작하는 랜딩페이지도 가능합니다.\n추가 제작을 원하는 페이지가 있다면 선택해주세요.",
-          type: "multi-selection",
-          options: pageOptions.filter((p: string) => p !== "메인"),
-        }, nextStep);
-      } else if (currentStep === 1) {
-        let selectedPages = option as string[];
-        if (!selectedPages.includes("메인")) selectedPages = ["메인", ...selectedPages];
-        if (selectedPages.includes("잘 모르겠어요")) selectedPages = DEFAULT_DONT_KNOW_PAGES;
-        
-        const initialSections = selectedPages.map((p) => ({ name: p, count: DEFAULT_PAGE_SECTIONS[p] || 3 }));
-        const nextStep = 2;
-        setTempPageSections(initialSections);
-        setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, pages: initialSections } }));
-        addMessage({
-          role: "bot",
-          content: "선택하신 페이지별로 상세 섹션 수를 조정해주세요.\n섹션이 많아질수록 기획과 디자인의 양이 늘어납니다.",
-          type: "section-adjustment",
-        }, nextStep);
-      } else if (currentStep === 2) {
-        // 원래 3단계(구성요소) 생략하고 바로 4단계(게시판)로 이동
-        const nextStep = 3;
-        setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, pages: option as PageSection[] } }));
-        addMessage({
-          role: "bot",
-          content: "운영에 필요한 게시판 종류를 선택해 주세요.",
-          type: "multi-selection",
-          options: ["공지사항", "블로그", "포트폴리오(갤러리)", "자료실", "후기"],
-        }, nextStep);
-      } else if (currentStep === 3) {
-        const nextStep = 4;
-        setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, boards: option as string[] } }));
-        addMessage({
-          role: "bot",
-          content: "추가로 고려 중인 기능이 있으신가요?\n('다국어 기능' 선택 시 섹션 단가가 조정됩니다.)",
-          type: "multi-selection",
-          options: ["예약 기능", "회원가입 기능", "다국어 기능", "내용 직접 수정 기능", "결제 기능"],
-        }, nextStep);
-      } else if (currentStep === 4) {
-        const nextStep = 5;
-        setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, features: option as string[] } }));
-        addMessage({
-          role: "bot",
-          content: "현재 어느 단계까지 준비되셨나요?",
-          type: "selection",
-          options: ["텍스트/이미지 준비됨", "내용 기획/정리 필요", "디자인 소스 포함 전체 기획 필요"],
-        }, nextStep);
-      } else if (currentStep === 5) {
-        const nextStep = 6;
-        setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, dataReadiness: option as string } }));
-        addMessage({
-          role: "bot",
-          content: "원하시는 디자인의 수준을 선택해주세요.",
-          type: "selection",
-          options: ["템플릿 기반 간단 제작", "맞춤형 디자인", "브랜드 맞춤 고급 디자인"],
-        }, nextStep);
-      } else if (currentStep === 6) {
-        const designLevel = option as string;
-        const res = calculateEstimate(
-          state.confirmed.pages,
-          state.confirmed.boards,
-          state.confirmed.features,
-          designLevel,
-          state.confirmed.dataReadiness
-        );
-        const nextStep = 7;
-        setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, designLevel } }));
-        addMessage({ role: "bot", content: "모든 분석이 완료되었습니다. 제작 전문가가 분석한 예상 견적서입니다." }, nextStep);
-        await new Promise((r) => setTimeout(r, 600));
-        addMessage({ role: "bot", content: "예상 제작비", type: "quote", data: res }, nextStep);
-        await new Promise((r) => setTimeout(r, 400));
-        addMessage({
-          role: "bot",
-          content: "예상 제작비를 확인했습니다.\n더 정확한 견적과 상담을 위해 몇 가지 정보를 추가로 입력해주세요. (약 1분 소요)",
-          type: "selection",
-          options: ["네, 상세 견적 이어서 진행할게요", "아니요, 견적만 확인할게요"],
-        }, nextStep);
-      } else if (currentStep === 7) {
-        if (option === "네, 상세 견적 이어서 진행할게요") {
-          setState((prev) => ({ ...prev, isDetailedFlow: true, detailedStep: 1 }));
-          addMessage({ role: "bot", content: "상세 인터뷰를 시작합니다. 성함을 입력해 주세요." }, 101);
-        } else {
-          addMessage({ role: "bot", content: "견적 확인을 마쳤습니다. 감사합니다! 🙏" }, 8);
+        if (currentStep === 0) {
+          const selectedTypeLabel = option as string;
+          const typeKey = TYPE_LABELS[selectedTypeLabel] || "UNKNOWN";
+          const pageOptions = TYPE_PAGES_MAPPING[typeKey as WebsiteType] || TYPE_PAGES_MAPPING["UNKNOWN"];
+          const nextStep = 1;
+          setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, type: selectedTypeLabel } }));
+          setTempSelection(["메인"]);
+          addMessage({
+            role: "bot",
+            content: "'메인' 페이지는 기본 포함입니다. 메인 페이지만 제작하는 랜딩페이지도 가능합니다.\n추가 제작을 원하는 페이지가 있다면 선택해주세요.",
+            type: "multi-selection",
+            options: pageOptions.filter((p: string) => p !== "메인"),
+          }, nextStep);
+        } else if (currentStep === 1) {
+          let selectedPages = option as string[];
+          if (!selectedPages.includes("메인")) selectedPages = ["메인", ...selectedPages];
+          if (selectedPages.includes("잘 모르겠어요")) selectedPages = DEFAULT_DONT_KNOW_PAGES;
+
+          const initialSections = selectedPages.map((p) => ({ name: p, count: DEFAULT_PAGE_SECTIONS[p] || 3 }));
+          const nextStep = 2;
+          setTempPageSections(initialSections);
+          setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, pages: initialSections } }));
+          addMessage({
+            role: "bot",
+            content: "선택하신 페이지별로 상세 섹션 수를 조정해주세요.\n섹션이 많아질수록 기획과 디자인의 양이 늘어납니다.",
+            type: "section-adjustment",
+          }, nextStep);
+        } else if (currentStep === 2) {
+          // 원래 3단계(구성요소) 생략하고 바로 4단계(게시판)로 이동
+          const nextStep = 3;
+          setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, pages: option as PageSection[] } }));
+          addMessage({
+            role: "bot",
+            content: "운영에 필요한 게시판 종류를 선택해 주세요.",
+            type: "multi-selection",
+            options: ["공지사항", "블로그", "포트폴리오(갤러리)", "자료실", "후기"],
+          }, nextStep);
+        } else if (currentStep === 3) {
+          const nextStep = 4;
+          setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, boards: option as string[] } }));
+          addMessage({
+            role: "bot",
+            content: "추가로 고려 중인 기능이 있으신가요?\n('다국어 기능' 선택 시 섹션 단가가 조정됩니다.)",
+            type: "multi-selection",
+            options: ["예약 기능", "회원가입 기능", "다국어 기능", "내용 직접 수정 기능", "결제 기능"],
+          }, nextStep);
+        } else if (currentStep === 4) {
+          const nextStep = 5;
+          setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, features: option as string[] } }));
+          addMessage({
+            role: "bot",
+            content: "현재 어느 단계까지 준비되셨나요?",
+            type: "selection",
+            options: ["텍스트/이미지 준비됨", "내용 기획/정리 필요", "디자인 소스 포함 전체 기획 필요"],
+          }, nextStep);
+        } else if (currentStep === 5) {
+          const nextStep = 6;
+          setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, dataReadiness: option as string } }));
+          addMessage({
+            role: "bot",
+            content: "원하시는 디자인의 수준을 선택해주세요.",
+            type: "selection",
+            options: ["템플릿 기반 간단 제작", "맞춤형 디자인", "브랜드 맞춤 고급 디자인"],
+          }, nextStep);
+        } else if (currentStep === 6) {
+          const designLevel = option as string;
+          const res = calculateEstimate(
+            state.confirmed.pages,
+            state.confirmed.boards,
+            state.confirmed.features,
+            designLevel,
+            state.confirmed.dataReadiness
+          );
+          const nextStep = 7;
+          setState((prev) => ({ ...prev, step: nextStep, confirmed: { ...prev.confirmed, designLevel } }));
+          addMessage({ role: "bot", content: "모든 분석이 완료되었습니다. 제작 전문가가 분석한 예상 견적서입니다." }, nextStep);
+          await new Promise((r) => setTimeout(r, 600));
+          addMessage({ role: "bot", content: "예상 제작비", type: "quote", data: res }, nextStep);
+          await new Promise((r) => setTimeout(r, 400));
+          addMessage({
+            role: "bot",
+            content: "예상 제작비를 확인했습니다.\n더 정확한 견적과 상담을 위해 몇 가지 정보를 추가로 입력해주세요. (약 1분 소요)",
+            type: "selection",
+            options: ["네, 상세 견적 이어서 진행할게요", "아니요, 견적만 확인할게요"],
+          }, nextStep);
+        } else if (currentStep === 7) {
+          if (option === "네, 상세 견적 이어서 진행할게요") {
+            setState((prev) => ({ ...prev, isDetailedFlow: true, detailedStep: 1 }));
+            addMessage({ role: "bot", content: "상세 인터뷰를 시작합니다. 성함을 입력해 주세요." }, 101);
+          } else {
+            addMessage({ role: "bot", content: "견적 확인을 마쳤습니다. 감사합니다! 🙏" }, 8);
+          }
         }
-      }
 
-      if (currentStep !== 0) setTempSelection([]);
-    } else {
-      const dStep = state.detailedStep;
-      
-      // Validation Check
-      if (dStep === 1) { // 성함
-        if (!option || (option as string).trim().length < 2) {
+        if (currentStep !== 0) setTempSelection([]);
+      } else {
+        const dStep = state.detailedStep;
+
+        // Validation Check
+        if (dStep === 1) { // 성함
+          if (!option || (option as string).trim().length < 2) {
             addMessage({ role: "bot", content: "성함을 2자 이상 입력해 주세요." }, 101);
             return;
+          }
+          setState((prev) => ({ ...prev, details: { ...prev.details, name: (option as string).trim() }, detailedStep: 2 }));
+          addMessage({ role: "bot", content: "연락처를 입력해 주세요. (상담을 위해 반드시 필요합니다)", type: "contact" }, 102);
         }
-        setState((prev) => ({ ...prev, details: { ...prev.details, name: (option as string).trim() }, detailedStep: 2 }));
-        addMessage({ role: "bot", content: "연락처를 입력해 주세요. (상담을 위해 반드시 필요합니다)", type: "contact" }, 102);
-      } 
-      else if (dStep === 2) { // 연락처 통합 (Email + Phone)
-        const { email, phone } = option as { email: string; phone: string };
-        setState((prev) => ({ ...prev, details: { ...prev.details, email, phone }, detailedStep: 3 }));
-        addMessage({ 
-            role: "bot", 
+        else if (dStep === 2) { // 연락처 통합 (Email + Phone)
+          const { email, phone } = option as { email: string; phone: string };
+          setState((prev) => ({ ...prev, details: { ...prev.details, email, phone }, detailedStep: 3 }));
+          addMessage({
+            role: "bot",
             content: "사업 운영 중이신 업종은 무엇인가요?",
             type: "selection",
             options: ["IT/기술", "교육/강의", "제조/물류", "서비스/숙박", "요식업/카페", "건설/인테리어", "의료/법률", "개인 브랜딩", "기타"]
-        }, 103);
-      } 
-      else if (dStep === 3) { // 업종 완료 -> 고객층
-        setState((prev) => ({ ...prev, details: { ...prev.details, industry: option as string }, detailedStep: 4 }));
-        addMessage({ 
-            role: "bot", 
+          }, 103);
+        }
+        else if (dStep === 3) { // 업종 완료 -> 고객층
+          setState((prev) => ({ ...prev, details: { ...prev.details, industry: option as string }, detailedStep: 4 }));
+          addMessage({
+            role: "bot",
             content: "홈페이지의 주요 타켓 고객은 누구인가요?",
             type: "selection",
-            options: ["일반 대중 (B2C)", "기업/파트너 (B2B)", "2030 MZ세대", "중장년층", "해외 고객", "특정 분야 전문가", "+ 기타"]
-        }, 104);
-      } 
-      else if (dStep === 4) { // 고객층 완료 -> 목적
-        setState((prev) => ({ ...prev, details: { ...prev.details, targetAudience: option as string }, detailedStep: 5 }));
-        addMessage({ 
-            role: "bot", 
+            options: ["일반 대중 (B2C)", "기업/파트너 (B2B)", "2030 MZ세대", "중장년층", "해외 고객", "특정 분야 전문가", "기타 +"]
+          }, 104);
+        }
+        else if (dStep === 4) { // 고객층 완료 -> 목적
+          setState((prev) => ({ ...prev, details: { ...prev.details, targetAudience: option as string }, detailedStep: 5 }));
+          addMessage({
+            role: "bot",
             content: "제작하시려는 가장 큰 목적은 무엇인가요?",
             type: "selection",
-            options: ["신뢰도 향상/회사 소개", "서비스 신청/예약 유도", "제품 판매 및 결제", "포트폴리오 전시", "DB 수집 및 광고 랜딩", "+ 기타"]
-        }, 105);
-      } 
-      else if (dStep === 5) { // 목적 완료 -> 참고 사이트
-        setState((prev) => ({ ...prev, details: { ...prev.details, purpose: option as string }, detailedStep: 6 }));
-        addMessage({ role: "bot", content: "참고하시려는 경쟁사나 선호하는 사이트 주소를 입력해주세요. (없으면 '없음' 입력 가능)" }, 106);
-      } 
-      else if (dStep === 6) { // 참고 사이트 완료 -> 분위기
-        if (option !== "없음" && (option as string).length > 4) {
+            options: ["신뢰도 향상/회사 소개", "서비스 신청/예약 유도", "제품 판매 및 결제", "포트폴리오 전시", "DB 수집 및 광고 랜딩", "기타 +"]
+          }, 105);
+        }
+        else if (dStep === 5) { // 목적 완료 -> 참고 사이트
+          setState((prev) => ({ ...prev, details: { ...prev.details, purpose: option as string }, detailedStep: 6 }));
+          addMessage({ role: "bot", content: "참고하시려는 경쟁사나 선호하는 사이트 주소를 입력해주세요. (없으면 '없음' 입력 가능)" }, 106);
+        }
+        else if (dStep === 6) { // 참고 사이트 완료 -> 분위기
+          if (option !== "없음" && (option as string).length > 4) {
             const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
             if (!urlRegex.test(option as string) && !(option as string).includes(".")) {
-                addMessage({ role: "bot", content: "올바른 URL 형식을 입력하거나, 없으면 '없음'을 입력해 주세요." }, 106);
-                return;
+              addMessage({ role: "bot", content: "올바른 URL 형식을 입력하거나, 없으면 '없음'을 입력해 주세요." }, 106);
+              return;
             }
-        }
-        setState((prev) => ({ ...prev, details: { ...prev.details, refSites: [option as string] }, detailedStep: 7 }));
-        addMessage({ 
-            role: "bot", 
+          }
+          setState((prev) => ({ ...prev, details: { ...prev.details, refSites: [option as string] }, detailedStep: 7 }));
+          addMessage({
+            role: "bot",
             content: "선호하시는 디자인 무드가 있으신가요?",
             type: "selection",
             options: ["깔끔하고 미니멀한", "화려하고 역동적인", "차분하고 전문적인", "부드럽고 따뜻한", "트렌디하고 파격적인"]
-        }, 107);
-      } 
-      else if (dStep === 7) { // 분위기 완료 -> 컬러 톤
-        setState((prev) => ({ ...prev, details: { ...prev.details, designMood: option as string }, detailedStep: 8 }));
-        addMessage({ 
-            role: "bot", 
+          }, 107);
+        }
+        else if (dStep === 7) { // 분위기 완료 -> 컬러 톤
+          setState((prev) => ({ ...prev, details: { ...prev.details, designMood: option as string }, detailedStep: 8 }));
+          addMessage({
+            role: "bot",
             content: "홈페이지에 사용할 브랜드 컬러와 보조 컬러를 알려주세요. (최소 2개 이상 선택 권장)",
             type: "color-multi"
-        }, 108);
-      } 
-      else if (dStep === 8) { // 컬러 톤 완료 -> 로고
-        const hasBrand = (option as string).includes("브랜드 컬러");
-        const hasSecondary = (option as string).includes("보조 컬러");
-        
-        if (!(hasBrand && hasSecondary) && option !== "잘 모르겠어요 / 없음") {
-          addMessage({ role: "bot", content: "최소한 브랜드 컬러와 보조 컬러를 모두 지정해 주세요." }, 108);
-          return;
+          }, 108);
         }
+        else if (dStep === 8) { // 컬러 톤 완료 -> 로고
+          const hasBrand = (option as string).includes("브랜드 컬러");
+          const hasSecondary = (option as string).includes("보조 컬러");
 
-        setState((prev) => ({ ...prev, details: { ...prev.details, colorTone: option as string }, detailedStep: 9 }));
-        addMessage({
-          role: "bot",
-          content: "현재 브랜드 로고를 보유하고 계신가요?",
-          type: "selection",
-          options: ["네, 있습니다", "아니요, 제작이 필요합니다", "임시 로고 사용 중"],
-        }, 109);
-      } 
-      else if (dStep === 9) { // 로고 완료 -> 일정
-        setState((prev) => ({ ...prev, details: { ...prev.details, logoStatus: option as string }, detailedStep: 10 }));
-        addMessage({
-          role: "bot",
-          content: "희망하시는 오픈 일정이 있으신가요?",
-          type: "selection",
-          options: ["최대한 빨리 (한 달 이내)", "두 달 이내", "협의 가능/미정"],
-        }, 110);
-      } 
-      else if (dStep === 10) { // 일정 -> 파일 업로드
-        setState((prev) => ({ ...prev, details: { ...prev.details, targetSchedule: option as string }, detailedStep: 11 }));
-        addMessage({
-          role: "bot",
-          content: "마지막으로 참고할 자료를 업로드해주세요. (로고, 회사소개서, 기획안 등)",
-          type: "form",
-        }, 111);
-      } 
-      else if (dStep === 11) { // 파일 -> 추가 요청사항
-        setState((prev) => ({ ...prev, detailedStep: 12 }));
-        addMessage({ role: "bot", content: "더 전달하실 추가 요청사항이 있으신가요? (없으면 '없음')" }, 112);
+          if (!(hasBrand && hasSecondary) && option !== "잘 모르겠어요 / 없음") {
+            addMessage({ role: "bot", content: "최소한 브랜드 컬러와 보조 컬러를 모두 지정해 주세요." }, 108);
+            return;
+          }
+
+          setState((prev) => ({ ...prev, details: { ...prev.details, colorTone: option as string }, detailedStep: 9 }));
+          addMessage({
+            role: "bot",
+            content: "현재 브랜드 로고를 보유하고 계신가요?",
+            type: "selection",
+            options: ["네, 있습니다", "아니요, 제작이 필요합니다", "임시 로고 사용 중"],
+          }, 109);
+        }
+        else if (dStep === 9) { // 로고 완료 -> 일정
+          setState((prev) => ({ ...prev, details: { ...prev.details, logoStatus: option as string }, detailedStep: 10 }));
+          addMessage({
+            role: "bot",
+            content: "희망하시는 오픈 일정이 있으신가요?",
+            type: "selection",
+            options: ["최대한 빨리 (한 달 이내)", "두 달 이내", "협의 가능/미정"],
+          }, 110);
+        }
+        else if (dStep === 10) { // 일정 -> 파일 업로드
+          setState((prev) => ({ ...prev, details: { ...prev.details, targetSchedule: option as string }, detailedStep: 11 }));
+          addMessage({
+            role: "bot",
+            content: "마지막으로 참고할 자료를 업로드해주세요. (로고, 회사소개서, 기획안 등)",
+            type: "form",
+          }, 111);
+        }
+        else if (dStep === 11) { // 파일 -> 추가 요청사항
+          setState((prev) => ({ ...prev, detailedStep: 12 }));
+          addMessage({ role: "bot", content: "더 전달하실 추가 요청사항이 있으신가요? (없으면 '없음')" }, 112);
+        }
+        else if (dStep === 12) { // 완료 -> 제출
+          setState((prev) => ({ ...prev, details: { ...prev.details, additionalRequest: option as string }, detailedStep: 13 }));
+          setIsTyping(true);
+          // 제출을 시작한다는 짧은 안내
+          addMessage({ role: "bot", content: "모든 정보가 취합되었습니다. 브리프를 제출하는 중입니다..." }, 113);
+          await new Promise((r) => setTimeout(r, 1000));
+          await submitInterview({ ...state.details, additionalRequest: option as string });
+        }
       }
-      else if (dStep === 12) { // 완료 -> 제출
-        setState((prev) => ({ ...prev, details: { ...prev.details, additionalRequest: option as string }, detailedStep: 13 }));
-        setIsTyping(true);
-        // 제출을 시작한다는 짧은 안내
-        addMessage({ role: "bot", content: "모든 정보가 취합되었습니다. 브리프를 제출하는 중입니다..." }, 113);
-        await new Promise((r) => setTimeout(r, 1000));
-        await submitInterview({ ...state.details, additionalRequest: option as string });
-      }
-    }
-  } finally {
+    } finally {
       setIsTyping(false);
       setShowEtcInput(false);
     }
@@ -547,9 +556,9 @@ export default function Home() {
       }
     } catch (err: any) {
       console.error("SUBMIT_ERROR:", err);
-      addMessage({ 
-        role: "bot", 
-        content: `통신 중 오류가 발생했습니다: ${err.message}\nDB 설정이나 네트워크 상태를 확인해주세요.` 
+      addMessage({
+        role: "bot",
+        content: `통신 중 오류가 발생했습니다: ${err.message}\nDB 설정이나 네트워크 상태를 확인해주세요.`
       }, 113);
     }
     setIsTyping(false);
@@ -603,7 +612,7 @@ export default function Home() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-8 scroll-smooth pb-20">
         <AnimatePresence initial={false}>
           {messages.map((msg) => {
-            const isActiveStep = state.isDetailedFlow 
+            const isActiveStep = state.isDetailedFlow
               ? msg.step === state.detailedStep + 100
               : msg.step === state.step;
             const isUser = msg.role === "user";
@@ -623,15 +632,15 @@ export default function Home() {
                       isUser
                         ? "px-5 py-3.5 rounded-[18px] text-[15px] text-white"
                         : msg.type === "quote"
-                        ? "w-full my-4"
-                        : "px-5 py-4 rounded-[18px] text-[15px] whitespace-pre-wrap"
+                          ? "w-full my-4"
+                          : "px-5 py-4 rounded-[18px] text-[15px] whitespace-pre-wrap"
                     )}
                     style={
                       isUser
                         ? { background: "#1d1d1f", letterSpacing: "-0.374px", lineHeight: "1.47" }
                         : msg.type === "quote"
-                        ? {}
-                        : {
+                          ? {}
+                          : {
                             background: "white",
                             color: "#1d1d1f",
                             letterSpacing: "-0.374px",
@@ -656,18 +665,18 @@ export default function Home() {
                         <ChoiceButton
                           key={opt}
                           label={opt}
-                          variant={opt.includes("기타") ? "etc" : (opt === "잘 모르겠어요" || opt === "아니요" ? "secondary" : "primary")}
+                          variant={opt.includes("기타 +") ? "etc" : (opt === "잘 모르겠어요" || opt === "아니요" ? "secondary" : "primary")}
                           onClick={() => {
-                            if (opt.includes("기타")) {
-                                setShowEtcInput(true);
+                            if (opt.includes("기타 +")) {
+                              setShowEtcInput(true);
                             } else {
-                                handleSelection(opt);
+                              handleSelection(opt);
                             }
                           }}
                         />
                       ))}
                     </div>
-                    
+
                     <AnimatePresence>
                       {isActiveStep && showEtcInput && (
                         <motion.div
@@ -686,7 +695,7 @@ export default function Home() {
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && etcInputValue.trim()) {
                                 handleSelection(etcInputValue.trim());
-                                setEtcInputValue(""); 
+                                setEtcInputValue("");
                                 setShowEtcInput(false);
                               }
                             }}
@@ -715,7 +724,7 @@ export default function Home() {
                   <div className={cn("mt-4 w-full space-y-3", (!isActiveStep && editingStep !== msg.step) && "hidden")}>
                     <div className="flex flex-wrap gap-2">
                       {state.step === 1 && (
-                        <ChoiceButton label="메인" selected locked onClick={() => {}} />
+                        <ChoiceButton label="메인" selected locked onClick={() => { }} />
                       )}
 
                       {msg.options.map((opt) => (
@@ -795,10 +804,18 @@ export default function Home() {
                             placeholder="항목 직접 입력..."
                             value={etcInputValue}
                             onChange={(e) => setEtcInputValue(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && addCustomOption()}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                                e.preventDefault();
+                                addCustomOption();
+                              }
+                            }}
                           />
                           <button
-                            onClick={addCustomOption}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              addCustomOption();
+                            }}
                             className="h-10 px-4 text-white rounded-[8px] text-[14px] hover:opacity-90 transition-opacity"
                             style={{ background: "#0071e3", letterSpacing: "-0.224px" }}
                           >
@@ -950,7 +967,7 @@ export default function Home() {
                   </div>
                 )}
 
-                 {/* Contact input form (Email + Phone) */}
+                {/* Contact input form (Email + Phone) */}
                 {msg.type === "contact" && (
                   <div className="mt-4 w-full">
                     <ContactInputCard
@@ -968,12 +985,12 @@ export default function Home() {
                       onConfirm={(val) => handleSelection(val)}
                       isActive={isActiveStep || editingStep === msg.step}
                       placeholder={
-                        msg.step === 101 ? "성함을 입력해주세요" : 
-                        "추가 요청사항을 입력해주세요"
+                        msg.step === 101 ? "성함을 입력해주세요" :
+                          "추가 요청사항을 입력해주세요"
                       }
                       initialData={
-                        msg.step === 101 ? state.details.name : 
-                        state.details.additionalRequest
+                        msg.step === 101 ? state.details.name :
+                          state.details.additionalRequest
                       }
                       showNoneButton={msg.step === 112}
                     />
@@ -1018,18 +1035,18 @@ export default function Home() {
           {isTyping && <TypingIndicator />}
         </AnimatePresence>
       </div>
-      
+
       {/* 상세 인터뷰 중에는 하단 바 숨김 (인라인 UI 사용) */}
       <AnimatePresence>
         {editingStep !== null && editingStep < 100 && (
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }} 
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
             exit={{ y: 20, opacity: 0 }}
             className="px-6 py-4 bg-white border-t border-[#EBEDF3] flex gap-2 items-center"
             style={{ background: "rgba(255,255,255,0.9)", backdropFilter: "blur(10px)" }}
           >
-            <input 
+            <input
               type="text"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
@@ -1043,7 +1060,7 @@ export default function Home() {
               placeholder="내용을 입력하세요..."
               className="flex-1 bg-[#F1F2F6] border border-[#EBEDF3] rounded-2xl px-5 py-3 text-[15px] outline-none focus:border-[#0071e3] transition-all"
             />
-            <button 
+            <button
               onClick={() => {
                 if (chatInput.trim()) {
                   const val = chatInput;
@@ -1103,9 +1120,9 @@ function ChoiceButton({
   const style: React.CSSProperties = (() => {
     if (locked || selected) return { background: "#1d1d1f", color: "white", border: "1px solid #1d1d1f" };
     if (variant === "secondary") return { background: "rgba(0,0,0,0.05)", color: "#1d1d1f", border: "1px solid rgba(0,0,0,0.1)" };
-    if (variant === "etc") return { 
-      background: "#FFFFFF", 
-      color: isHovered ? "#161A1C" : "#818496", 
+    if (variant === "etc") return {
+      background: "#FFFFFF",
+      color: isHovered ? "#161A1C" : "#818496",
       border: isHovered ? "1px solid #161A1C" : "1px dashed #CDD3DB",
     };
     if (variant === "outline") return { background: "white", color: "#0066cc", border: "1px solid #0066cc" };
@@ -1465,16 +1482,16 @@ function DetailedStage2Form({
   );
 }
 
-function DirectInputCard({ 
-  onConfirm, 
-  isActive, 
-  placeholder, 
+function DirectInputCard({
+  onConfirm,
+  isActive,
+  placeholder,
   initialData,
   showNoneButton = false
-}: { 
-  onConfirm: (val: string) => void; 
-  isActive: boolean; 
-  placeholder: string; 
+}: {
+  onConfirm: (val: string) => void;
+  isActive: boolean;
+  placeholder: string;
   initialData?: string;
   showNoneButton?: boolean;
 }) {
@@ -1512,7 +1529,7 @@ function DirectInputCard({
         className="w-full bg-[#F1F2F6] border-none rounded-xl px-4 py-4 text-[15px] outline-none focus:ring-2 focus:ring-[#0071e3] transition-all"
         autoFocus
       />
-      
+
       {showNoneButton ? (
         <div className="flex gap-2 mt-4">
           <button
@@ -1573,13 +1590,13 @@ function MultiColorPickerCard({ onConfirm, isActive }: { onConfirm: (val: string
 
   const handleConfirm = () => {
     if (isSubmitting || !isActive) return;
-    
+
     const hasBrand = colors.some(c => c.type === "브랜드 컬러" && c.hex);
     const hasSecondary = colors.some(c => c.type === "보조 컬러" && c.hex);
-    
+
     if (!(hasBrand && hasSecondary)) {
-        alert("최소한 브랜드 컬러와 보조 컬러를 모두 지정해 주세요.");
-        return;
+      alert("최소한 브랜드 컬러와 보조 컬러를 모두 지정해 주세요.");
+      return;
     }
 
     setIsSubmitting(true);
@@ -1624,7 +1641,7 @@ function MultiColorPickerCard({ onConfirm, isActive }: { onConfirm: (val: string
                   onChange={(e) => updateColor(idx, "hex", e.target.value)}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
-                <div 
+                <div
                   className="w-full h-full rounded-full border-2 border-white shadow-sm"
                   style={{ backgroundColor: c.hex }}
                 />
@@ -1706,7 +1723,7 @@ function ColorPickerCard({ onConfirm, isActive, initialColor }: { onConfirm: (va
               onChange={(e) => setColor(e.target.value)}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
-            <div 
+            <div
               className="w-full h-full rounded-full border-2 border-white shadow-sm"
               style={{ backgroundColor: color }}
             />

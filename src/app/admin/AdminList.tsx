@@ -36,13 +36,13 @@ export default function AdminList({ initialInterviews }: { initialInterviews: an
   };
 
   const filteredInterviews = interviews.filter((item) => {
-    const matchesSearch = 
+    const matchesSearch =
       item.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.client_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.client_phone.includes(searchTerm);
-    
+
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter || (statusFilter === '접수됨' && item.status === '접수');
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -60,7 +60,7 @@ export default function AdminList({ initialInterviews }: { initialInterviews: an
             className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:border-black transition-all font-medium text-sm"
           />
         </div>
-        
+
         <div className="flex flex-wrap gap-2">
           {STATUS_LIST.map((s) => (
             <button
@@ -68,8 +68,8 @@ export default function AdminList({ initialInterviews }: { initialInterviews: an
               onClick={() => setStatusFilter(s.value)}
               className={cn(
                 "px-5 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-widest transition-all border-2",
-                statusFilter === s.value 
-                  ? "bg-black text-white border-black" 
+                statusFilter === s.value
+                  ? "bg-black text-white border-black"
                   : "bg-white text-gray-400 border-gray-100 hover:border-gray-200"
               )}
             >
@@ -89,18 +89,18 @@ export default function AdminList({ initialInterviews }: { initialInterviews: an
       {/* Main Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredInterviews.map((item) => (
-          <Link 
-            key={item.id} 
+          <Link
+            key={item.id}
             href={`/admin/${item.id}`}
             className="bg-white border border-border rounded-xl p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
           >
             <div className="flex justify-between items-start mb-4">
               <span className={cn(
                 "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                (item.status === '접수됨' || item.status === '접수') ? "bg-black text-white border-black" : 
-                item.status === '계약진행' ? "bg-blue-500 text-white border-blue-500" :
-                item.status === '완료' ? "bg-green-500 text-white border-green-500" :
-                "bg-white text-gray-400 border-gray-200"
+                (item.status === '접수됨' || item.status === '접수') ? "bg-black text-white border-black" :
+                  item.status === '계약진행' ? "bg-blue-500 text-white border-blue-500" :
+                    item.status === '완료' ? "bg-green-500 text-white border-green-500" :
+                      "bg-white text-gray-400 border-gray-200"
               )}>
                 {item.status || '접수됨'}
               </span>
