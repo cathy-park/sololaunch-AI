@@ -1,0 +1,16 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    - cron: '0 0 * * 1' # 매주 월요일 오전 9시 (KST) 실행
+  workflow_dispatch: # 수동 실행 가능하도록 설정
+
+jobs:
+  keep_alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          curl -i -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/interviews?limit=1" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
